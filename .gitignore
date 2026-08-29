@@ -1,0 +1,63 @@
+# ==============================
+# Python
+# ==============================
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Ambientes virtuais
+.venv/
+venv/
+env/
+
+# ==============================
+# PyInstaller / Builds
+# ==============================
+build/
+dist/
+
+# Mantemos o .spec no Git
+# *.spec
+
+# ==============================
+# NDT - arquivos gerados
+# ==============================
+logs/
+exports/
+backups/
+
+# Banco local de incidentes
+data/incidents.db
+data/incidents.db-wal
+data/incidents.db-shm
+
+# Configuração local do usuário
+/config.json
+
+# Backups soltos de configuração
+/NDT_Config_*.json
+
+# ==============================
+# IDE
+# ==============================
+.vscode/
+.idea/
+
+# ==============================
+# Cache de ferramentas
+# ==============================
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# ==============================
+# Sistema operacional
+# ==============================
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ==============================
+# Logs genéricos
+# ==============================
+*.log
