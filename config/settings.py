@@ -71,23 +71,10 @@ CONFIG_PADRAO = {
     "navegador_personalizado": "",
     "abrir_interface_web_automaticamente": True,
 
-    # Experiência de inicialização
-    "exibir_tela_inicializacao": True,
-
     "alerta_sonoro_geral_ativado": True,
     "alerta_sonoro_servico_indisponivel_ativado": True,
     "alerta_sonoro_modo": "padrao",
     "alerta_sonoro_arquivo": "",
-
-    # Proteção adicional contra flapping:
-    # após um alerta individual tocar, uma nova queda do
-    # mesmo serviço só poderá tocar novamente depois
-    # deste período.
-    "alerta_cooldown_minutos": 5,
-
-    # Registro de Incidentes
-    "registro_incidentes_ativado": True,
-    "registro_incidentes_retencao_dias": 90,
 
     "servicos_padrao_inicializados": False,
     "servicos_down_detector": [],
@@ -98,17 +85,6 @@ CONFIG_PADRAO = {
         "8000": "HTTP",
         "8080": "HTTP Alternativo",
         "8291": "Winbox"
-    },
-
-    # Protocolo usado para abrir interfaces web em portas TCP.
-    # Mantemos separado de "portas" para preservar compatibilidade
-    # com o scanner atual.
-    "interfaces_web_portas": {
-        "80": "HTTP",
-        "443": "HTTPS",
-        "8000": "HTTP",
-        "8080": "HTTP",
-        "8291": "NENHUMA"
     }
 }
 
@@ -152,16 +128,11 @@ def carregar_configuracoes():
                     "navegador_preferido",
                     "navegador_personalizado",
                     "abrir_interface_web_automaticamente",
-                    "exibir_tela_inicializacao",
 
                     "alerta_sonoro_geral_ativado",
                     "alerta_sonoro_servico_indisponivel_ativado",
                     "alerta_sonoro_modo",
                     "alerta_sonoro_arquivo",
-                    "alerta_cooldown_minutos",
-
-                    "registro_incidentes_ativado",
-                    "registro_incidentes_retencao_dias",
 
                     "servicos_padrao_inicializados"
                 ]
@@ -188,18 +159,6 @@ def carregar_configuracoes():
                     configuracoes[
                         "portas"
                     ] = portas
-
-                interfaces_web = dados.get(
-                    "interfaces_web_portas"
-                )
-
-                if isinstance(
-                    interfaces_web,
-                    dict
-                ):
-                    configuracoes[
-                        "interfaces_web_portas"
-                    ] = interfaces_web
 
                 servicos = dados.get(
                     "servicos_down_detector"
@@ -250,16 +209,6 @@ def carregar_configuracoes():
             "alerta_sonoro_modo"
         ] = "padrao"
 
-    if not isinstance(
-        configuracoes.get(
-            "exibir_tela_inicializacao"
-        ),
-        bool
-    ):
-        configuracoes[
-            "exibir_tela_inicializacao"
-        ] = True
-
     for campo_alerta in (
         "alerta_sonoro_geral_ativado",
         "alerta_sonoro_servico_indisponivel_ativado"
@@ -283,151 +232,6 @@ def carregar_configuracoes():
         configuracoes[
             "alerta_sonoro_arquivo"
         ] = ""
-
-    cooldown = configuracoes.get(
-        "alerta_cooldown_minutos",
-        5
-    )
-
-    if (
-        not isinstance(
-            cooldown,
-            (int, float)
-        )
-        or isinstance(
-            cooldown,
-            bool
-        )
-    ):
-        cooldown = 5
-
-    cooldown = int(
-        max(
-            0,
-            min(
-                cooldown,
-                1440
-            )
-        )
-    )
-
-    configuracoes[
-        "alerta_cooldown_minutos"
-    ] = cooldown
-
-    registro_ativado = configuracoes.get(
-        "registro_incidentes_ativado",
-        True
-    )
-
-    if not isinstance(
-        registro_ativado,
-        bool
-    ):
-        registro_ativado = True
-
-    configuracoes[
-        "registro_incidentes_ativado"
-    ] = registro_ativado
-
-    retencao = configuracoes.get(
-        "registro_incidentes_retencao_dias",
-        90
-    )
-
-    try:
-        retencao = int(
-            retencao
-        )
-
-    except (
-        TypeError,
-        ValueError
-    ):
-        retencao = 90
-
-    retencao = max(
-        7,
-        min(
-            retencao,
-            3650
-        )
-    )
-
-    configuracoes[
-        "registro_incidentes_retencao_dias"
-    ] = retencao
-
-    portas_atuais = configuracoes.get(
-        "portas",
-        {}
-    )
-
-    interfaces_web = configuracoes.get(
-        "interfaces_web_portas",
-        {}
-    )
-
-    if not isinstance(
-        interfaces_web,
-        dict
-    ):
-        interfaces_web = {}
-
-    interfaces_normalizadas = {}
-
-    for porta in portas_atuais:
-        porta_texto = str(
-            porta
-        )
-
-        protocolo = str(
-            interfaces_web.get(
-                porta_texto,
-                ""
-            )
-        ).strip().upper()
-
-        if protocolo not in {
-            "HTTP",
-            "HTTPS",
-            "AUTOMATICO",
-            "NENHUMA"
-        }:
-            # Migração amigável para instalações antigas.
-            try:
-                numero_porta = int(
-                    porta_texto
-                )
-            except (
-                TypeError,
-                ValueError
-            ):
-                numero_porta = 0
-
-            if numero_porta in {
-                443,
-                8443
-            }:
-                protocolo = "HTTPS"
-
-            elif numero_porta in {
-                80,
-                8000,
-                8080
-            }:
-                protocolo = "HTTP"
-
-            else:
-                protocolo = "NENHUMA"
-
-        interfaces_normalizadas[
-            porta_texto
-        ] = protocolo
-
-    configuracoes[
-        "interfaces_web_portas"
-    ] = interfaces_normalizadas
 
     if not configuracoes[
         "servicos_padrao_inicializados"

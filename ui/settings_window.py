@@ -1,8 +1,6 @@
 from copy import deepcopy
 from pathlib import Path
 
-from PySide6.QtCore import Qt
-
 from PySide6.QtWidgets import (
     QAbstractItemView,
     QCheckBox,
@@ -20,20 +18,15 @@ from PySide6.QtWidgets import (
     QMessageBox,
     QPushButton,
     QSpinBox,
-    QStackedWidget,
     QTableWidget,
     QTableWidgetItem,
-    QListWidget,
+    QTabWidget,
     QVBoxLayout,
     QWidget
 )
 
 from config.service_presets import (
     PRESET_SERVICOS
-)
-
-from config.settings import (
-    CONFIG_PADRAO
 )
 
 from network.down_detector import (
@@ -49,10 +42,6 @@ from services.browser import (
     NAVEGADORES,
     abrir_url,
     obter_nome_navegador
-)
-
-from services.incidents import (
-    limpar_incidentes_encerrados
 )
 
 
@@ -75,290 +64,28 @@ class SettingsWindow(QDialog):
         )
 
         self.resize(
-            980,
-            720
-        )
-
-        self.setMinimumSize(
-            900,
+            780,
             650
         )
 
-        self.titulos_paginas = []
-        self.descricoes_paginas = []
-
-        layout_principal = QVBoxLayout(
+        layout = QVBoxLayout(
             self
         )
 
-        layout_principal.setContentsMargins(
-            16,
-            16,
-            16,
-            16
+        self.abas = QTabWidget()
+
+        layout.addWidget(
+            self.abas
         )
-
-        layout_principal.setSpacing(
-            12
-        )
-
-        # =================================================
-        # CABEÇALHO
-        # =================================================
-
-        cabecalho = QFrame()
-
-        cabecalho.setObjectName(
-            "painelConfiguracaoInfo"
-        )
-
-        layout_cabecalho = QVBoxLayout(
-            cabecalho
-        )
-
-        layout_cabecalho.setContentsMargins(
-            16,
-            12,
-            16,
-            12
-        )
-
-        titulo = QLabel(
-            "Configurações"
-        )
-
-        titulo.setObjectName(
-            "tituloConfiguracaoInfo"
-        )
-
-        subtitulo = QLabel(
-            "Ajuste o comportamento do diagnóstico, "
-            "monitoramento, alertas e integrações do NDT."
-        )
-
-        subtitulo.setWordWrap(
-            True
-        )
-
-        layout_cabecalho.addWidget(
-            titulo
-        )
-
-        layout_cabecalho.addWidget(
-            subtitulo
-        )
-
-        layout_principal.addWidget(
-            cabecalho
-        )
-
-        # =================================================
-        # CORPO: NAVEGAÇÃO LATERAL + CONTEÚDO
-        # =================================================
-
-        corpo = QHBoxLayout()
-
-        corpo.setSpacing(
-            14
-        )
-
-        painel_menu = QFrame()
-
-        painel_menu.setObjectName(
-            "painelConfiguracaoInfo"
-        )
-
-        painel_menu.setFixedWidth(
-            210
-        )
-
-        layout_menu = QVBoxLayout(
-            painel_menu
-        )
-
-        layout_menu.setContentsMargins(
-            10,
-            12,
-            10,
-            12
-        )
-
-        titulo_menu = QLabel(
-            "Categorias"
-        )
-
-        titulo_menu.setObjectName(
-            "subtituloConfiguracaoInfo"
-        )
-
-        layout_menu.addWidget(
-            titulo_menu
-        )
-
-        self.menu_configuracoes = QListWidget()
-
-        self.menu_configuracoes.setObjectName(
-            "menuConfiguracoes"
-        )
-
-        self.menu_configuracoes.setSelectionMode(
-            QAbstractItemView
-            .SelectionMode
-            .SingleSelection
-        )
-
-        self.menu_configuracoes.setHorizontalScrollBarPolicy(
-            Qt.ScrollBarPolicy.ScrollBarAlwaysOff
-        )
-
-        self.menu_configuracoes.setStyleSheet(
-            """
-            QListWidget#menuConfiguracoes {
-                background: transparent;
-                border: none;
-                outline: none;
-            }
-
-            QListWidget#menuConfiguracoes::item {
-                padding: 12px 14px;
-                margin: 2px 0;
-                border-radius: 6px;
-            }
-
-            QListWidget#menuConfiguracoes::item:hover {
-                background-color: #13283a;
-            }
-
-            QListWidget#menuConfiguracoes::item:selected {
-                background-color: #17324a;
-                color: #66b3ff;
-                border-left: 3px solid #2f81f7;
-            }
-            """
-        )
-
-        layout_menu.addWidget(
-            self.menu_configuracoes,
-            1
-        )
-
-        corpo.addWidget(
-            painel_menu
-        )
-
-        painel_conteudo = QFrame()
-
-        painel_conteudo.setObjectName(
-            "painelConfiguracaoInfo"
-        )
-
-        layout_conteudo = QVBoxLayout(
-            painel_conteudo
-        )
-
-        layout_conteudo.setContentsMargins(
-            16,
-            14,
-            16,
-            14
-        )
-
-        self.titulo_pagina = QLabel(
-            ""
-        )
-
-        self.titulo_pagina.setObjectName(
-            "tituloConfiguracaoInfo"
-        )
-
-        self.descricao_pagina = QLabel(
-            ""
-        )
-
-        self.descricao_pagina.setWordWrap(
-            True
-        )
-
-        layout_conteudo.addWidget(
-            self.titulo_pagina
-        )
-
-        layout_conteudo.addWidget(
-            self.descricao_pagina
-        )
-
-        separador = QFrame()
-
-        separador.setFrameShape(
-            QFrame.Shape.HLine
-        )
-
-        separador.setFrameShadow(
-            QFrame.Shadow.Sunken
-        )
-
-        layout_conteudo.addWidget(
-            separador
-        )
-
-        self.pilha_configuracoes = QStackedWidget()
-
-        layout_conteudo.addWidget(
-            self.pilha_configuracoes,
-            1
-        )
-
-        corpo.addWidget(
-            painel_conteudo,
-            1
-        )
-
-        layout_principal.addLayout(
-            corpo,
-            1
-        )
-
-        # =================================================
-        # PÁGINAS
-        # =================================================
 
         self.criar_aba_geral()
         self.criar_aba_portas()
         self.criar_aba_down_detector()
         self.criar_aba_tracert_continuo()
-        self.criar_aba_incidentes()
         self.criar_aba_alertas()
         self.criar_aba_navegador()
 
-        self.menu_configuracoes.currentRowChanged.connect(
-            self.mudar_pagina_configuracoes
-        )
-
-        self.menu_configuracoes.setCurrentRow(
-            0
-        )
-
-        # =================================================
-        # RODAPÉ FIXO
-        # =================================================
-
-        linha_rodape = QFrame()
-
-        linha_rodape.setFrameShape(
-            QFrame.Shape.HLine
-        )
-
-        linha_rodape.setFrameShadow(
-            QFrame.Shadow.Sunken
-        )
-
-        layout_principal.addWidget(
-            linha_rodape
-        )
-
         botoes = QHBoxLayout()
-
-        botoes.addStretch()
 
         botao_cancelar = QPushButton(
             "Cancelar"
@@ -368,9 +95,7 @@ class SettingsWindow(QDialog):
             "Salvar"
         )
 
-        botao_salvar.setObjectName(
-            "botaoSalvarConfiguracoes"
-        )
+        botoes.addStretch()
 
         botoes.addWidget(
             botao_cancelar
@@ -380,7 +105,7 @@ class SettingsWindow(QDialog):
             botao_salvar
         )
 
-        layout_principal.addLayout(
+        layout.addLayout(
             botoes
         )
 
@@ -390,54 +115,6 @@ class SettingsWindow(QDialog):
 
         botao_salvar.clicked.connect(
             self.salvar
-        )
-
-    def adicionar_pagina_configuracoes(
-        self,
-        pagina,
-        titulo,
-        descricao
-    ):
-        self.pilha_configuracoes.addWidget(
-            pagina
-        )
-
-        self.menu_configuracoes.addItem(
-            titulo
-        )
-
-        self.titulos_paginas.append(
-            titulo
-        )
-
-        self.descricoes_paginas.append(
-            descricao
-        )
-
-    def mudar_pagina_configuracoes(
-        self,
-        indice
-    ):
-        if (
-            indice < 0
-            or indice >= self.pilha_configuracoes.count()
-        ):
-            return
-
-        self.pilha_configuracoes.setCurrentIndex(
-            indice
-        )
-
-        self.titulo_pagina.setText(
-            self.titulos_paginas[
-                indice
-            ]
-        )
-
-        self.descricao_pagina.setText(
-            self.descricoes_paginas[
-                indice
-            ]
         )
 
     # ==================================================
@@ -657,174 +334,11 @@ class SettingsWindow(QDialog):
             explicacao
         )
 
-        painel_inicializacao = QFrame()
-
-        painel_inicializacao.setObjectName(
-            "painelConfiguracaoInfo"
-        )
-
-        layout_inicializacao = QVBoxLayout(
-            painel_inicializacao
-        )
-
-        titulo_inicializacao = QLabel(
-            "Inicialização"
-        )
-
-        titulo_inicializacao.setObjectName(
-            "subtituloConfiguracaoInfo"
-        )
-
-        self.checkbox_tela_inicializacao = QCheckBox(
-            "Exibir tela de inicialização do NDT"
-        )
-
-        self.checkbox_tela_inicializacao.setChecked(
-            self.configuracoes.get(
-                "exibir_tela_inicializacao",
-                True
-            )
-        )
-
-        descricao_inicializacao = QLabel(
-            "Exibe uma breve sequência visual enquanto o NDT "
-            "prepara a interface e os componentes principais."
-        )
-
-        descricao_inicializacao.setObjectName(
-            "textoSecundario"
-        )
-
-        descricao_inicializacao.setWordWrap(
-            True
-        )
-
-        layout_inicializacao.addWidget(
-            titulo_inicializacao
-        )
-
-        layout_inicializacao.addWidget(
-            self.checkbox_tela_inicializacao
-        )
-
-        layout_inicializacao.addWidget(
-            descricao_inicializacao
-        )
-
-        layout.addWidget(
-            painel_inicializacao
-        )
-
-        linha_default = QHBoxLayout()
-
-        linha_default.addStretch()
-
-        botao_default = QPushButton(
-            "Default"
-        )
-
-        botao_default.setObjectName(
-            "botaoDefaultConfiguracoes"
-        )
-
-        botao_default.setToolTip(
-            "Restaurar os valores padrão da aba Geral"
-        )
-
-        botao_default.clicked.connect(
-            self.restaurar_padrao_geral
-        )
-
-        linha_default.addWidget(
-            botao_default
-        )
-
-        layout.addLayout(
-            linha_default
-        )
-
         layout.addStretch()
 
-        self.adicionar_pagina_configuracoes(
+        self.abas.addTab(
             aba,
-            "Geral",
-            "Parâmetros principais de diagnóstico, latência, "
-            "oscilação e Monitor ICMP."
-        )
-
-    def restaurar_padrao_geral(
-        self
-    ):
-        resposta = QMessageBox.question(
-            self,
-            "Restaurar padrões",
-            "Deseja restaurar os valores padrão "
-            "da aba Geral?\n\n"
-            "As alterações só serão aplicadas "
-            "depois que você clicar em Salvar.",
-            QMessageBox.StandardButton.Yes
-            | QMessageBox.StandardButton.No,
-            QMessageBox.StandardButton.No
-        )
-
-        if (
-            resposta
-            != QMessageBox.StandardButton.Yes
-        ):
-            return
-
-        self.quantidade_ping.setValue(
-            CONFIG_PADRAO[
-                "quantidade_ping"
-            ]
-        )
-
-        self.timeout_portas.setValue(
-            CONFIG_PADRAO[
-                "timeout_portas"
-            ]
-        )
-
-        self.max_saltos.setValue(
-            CONFIG_PADRAO[
-                "max_saltos"
-            ]
-        )
-
-        self.limite_variacao_ping.setValue(
-            CONFIG_PADRAO[
-                "limite_variacao_ms"
-            ]
-        )
-
-        self.limite_variacao_http.setValue(
-            CONFIG_PADRAO[
-                "limite_variacao_http_ms"
-            ]
-        )
-
-        self.limite_latencia_ping.setValue(
-            CONFIG_PADRAO[
-                "limite_latencia_ping_ms"
-            ]
-        )
-
-        self.limite_latencia_http.setValue(
-            CONFIG_PADRAO[
-                "limite_latencia_http_ms"
-            ]
-        )
-
-        self.intervalo_ping.setValue(
-            CONFIG_PADRAO[
-                "intervalo_ping_continuo"
-            ]
-        )
-
-        self.checkbox_tela_inicializacao.setChecked(
-            CONFIG_PADRAO[
-                "exibir_tela_inicializacao"
-            ]
+            "Geral"
         )
 
     # ==================================================
@@ -843,13 +357,12 @@ class SettingsWindow(QDialog):
         self.tabela_portas = QTableWidget()
 
         self.tabela_portas.setColumnCount(
-            3
+            2
         )
 
         self.tabela_portas.setHorizontalHeaderLabels([
             "Porta",
-            "Serviço",
-            "Interface Web"
+            "Serviço"
         ])
 
         self.configurar_tabela(
@@ -869,11 +382,6 @@ class SettingsWindow(QDialog):
         cabecalho.setSectionResizeMode(
             1,
             QHeaderView.ResizeMode.Stretch
-        )
-
-        cabecalho.setSectionResizeMode(
-            2,
-            QHeaderView.ResizeMode.ResizeToContents
         )
 
         layout.addWidget(
@@ -930,10 +438,9 @@ class SettingsWindow(QDialog):
             self.editar_porta
         )
 
-        self.adicionar_pagina_configuracoes(
+        self.abas.addTab(
             aba,
-            "Portas",
-            "Gerencie as portas TCP utilizadas nos diagnósticos."
+            "Portas"
         )
 
     # ==================================================
@@ -1002,15 +509,13 @@ class SettingsWindow(QDialog):
         self.tabela_servicos = QTableWidget()
 
         self.tabela_servicos.setColumnCount(
-            5
+            3
         )
 
         self.tabela_servicos.setHorizontalHeaderLabels([
             "Serviço",
             "Tipo",
-            "Endereço",
-            "Alerta",
-            "Som"
+            "Endereço"
         ])
 
         self.configurar_tabela(
@@ -1037,16 +542,6 @@ class SettingsWindow(QDialog):
             QHeaderView.ResizeMode.Stretch
         )
 
-        cabecalho.setSectionResizeMode(
-            3,
-            QHeaderView.ResizeMode.ResizeToContents
-        )
-
-        cabecalho.setSectionResizeMode(
-            4,
-            QHeaderView.ResizeMode.ResizeToContents
-        )
-
         layout.addWidget(
             self.tabela_servicos
         )
@@ -1065,10 +560,6 @@ class SettingsWindow(QDialog):
             "Editar"
         )
 
-        configurar_alerta = QPushButton(
-            "Configurar alerta"
-        )
-
         remover = QPushButton(
             "Remover"
         )
@@ -1083,10 +574,6 @@ class SettingsWindow(QDialog):
 
         botoes.addWidget(
             editar
-        )
-
-        botoes.addWidget(
-            configurar_alerta
         )
 
         botoes.addWidget(
@@ -1111,10 +598,6 @@ class SettingsWindow(QDialog):
             self.editar_servico
         )
 
-        configurar_alerta.clicked.connect(
-            self.configurar_alerta_servico
-        )
-
         remover.clicked.connect(
             self.remover_servico
         )
@@ -1123,11 +606,9 @@ class SettingsWindow(QDialog):
             self.editar_servico
         )
 
-        self.adicionar_pagina_configuracoes(
+        self.abas.addTab(
             aba,
-            "Monitor de Serviços",
-            "Configure os serviços monitorados, frequência de "
-            "verificação e critérios de indisponibilidade."
+            "DownDetector"
         )
 
     # ==================================================
@@ -1187,229 +668,9 @@ class SettingsWindow(QDialog):
 
         layout.addStretch()
 
-        self.adicionar_pagina_configuracoes(
+        self.abas.addTab(
             aba,
-            "Monitor de Rota",
-            "Defina a amostra mínima usada na análise contínua da rota."
-        )
-
-    # ==================================================
-    # REGISTRO DE INCIDENTES
-    # ==================================================
-
-    def criar_aba_incidentes(
-        self
-    ):
-        aba = QWidget()
-
-        layout = QVBoxLayout(
-            aba
-        )
-
-        layout.setSpacing(
-            14
-        )
-
-        self.checkbox_registro_incidentes = QCheckBox(
-            "Registrar incidentes automaticamente"
-        )
-
-        self.checkbox_registro_incidentes.setChecked(
-            self.configuracoes.get(
-                "registro_incidentes_ativado",
-                True
-            )
-        )
-
-        layout.addWidget(
-            self.checkbox_registro_incidentes
-        )
-
-        formulario = QFormLayout()
-
-        self.retencao_incidentes = QSpinBox()
-
-        self.retencao_incidentes.setRange(
-            7,
-            3650
-        )
-
-        self.retencao_incidentes.setSuffix(
-            " dias"
-        )
-
-        self.retencao_incidentes.setValue(
-            int(
-                self.configuracoes.get(
-                    "registro_incidentes_retencao_dias",
-                    90
-                )
-            )
-        )
-
-        self.retencao_incidentes.setToolTip(
-            "Incidentes normalizados mais antigos que este período "
-            "serão removidos automaticamente."
-        )
-
-        formulario.addRow(
-            "Retenção do histórico:",
-            self.retencao_incidentes
-        )
-
-        layout.addLayout(
-            formulario
-        )
-
-        painel_info = QFrame()
-
-        painel_info.setObjectName(
-            "painelConfiguracaoInfo"
-        )
-
-        layout_info = QVBoxLayout(
-            painel_info
-        )
-
-        titulo_info = QLabel(
-            "Como funciona o Registro de Incidentes?"
-        )
-
-        titulo_info.setObjectName(
-            "tituloConfiguracaoInfo"
-        )
-
-        descricao = QLabel(
-            "O NDT registra falhas críticas de serviços e episódios "
-            "de instabilidade geral da rede. O histórico armazena o "
-            "horário de início, normalização, duração e causa provável. "
-            "O registro é independente dos alertas sonoros."
-        )
-
-        descricao.setWordWrap(
-            True
-        )
-
-        observacao = QLabel(
-            "A retenção é aplicada apenas a incidentes já normalizados. "
-            "Incidentes em andamento nunca são removidos automaticamente."
-        )
-
-        observacao.setWordWrap(
-            True
-        )
-
-        layout_info.addWidget(
-            titulo_info
-        )
-
-        layout_info.addWidget(
-            descricao
-        )
-
-        layout_info.addSpacing(
-            8
-        )
-
-        layout_info.addWidget(
-            observacao
-        )
-
-        layout.addWidget(
-            painel_info
-        )
-
-        linha_limpar = QHBoxLayout()
-
-        botao_limpar = QPushButton(
-            "Limpar histórico"
-        )
-
-        botao_limpar.setObjectName(
-            "botaoLimparHistorico"
-        )
-
-        botao_limpar.setToolTip(
-            "Apagar todos os incidentes já normalizados"
-        )
-
-        botao_limpar.clicked.connect(
-            self.limpar_historico_incidentes
-        )
-
-        linha_limpar.addWidget(
-            botao_limpar
-        )
-
-        linha_limpar.addStretch()
-
-        layout.addLayout(
-            linha_limpar
-        )
-
-        layout.addStretch()
-
-        self.checkbox_registro_incidentes.toggled.connect(
-            self.atualizar_controles_incidentes
-        )
-
-        self.atualizar_controles_incidentes()
-
-        self.adicionar_pagina_configuracoes(
-            aba,
-            "Incidentes",
-            "Controle o Registro de Incidentes, retenção do histórico "
-            "e limpeza de eventos já normalizados."
-        )
-
-    def atualizar_controles_incidentes(
-        self
-    ):
-        self.retencao_incidentes.setEnabled(
-            self.checkbox_registro_incidentes.isChecked()
-        )
-
-    def limpar_historico_incidentes(
-        self
-    ):
-        resposta = QMessageBox.warning(
-            self,
-            "Limpar histórico",
-            "Deseja apagar todos os incidentes já normalizados?\n\n"
-            "Incidentes em andamento serão preservados.\n"
-            "Esta ação é imediata e não pode ser desfeita.",
-            QMessageBox.StandardButton.Yes
-            | QMessageBox.StandardButton.No,
-            QMessageBox.StandardButton.No
-        )
-
-        if (
-            resposta
-            != QMessageBox.StandardButton.Yes
-        ):
-            return
-
-        try:
-            removidos = limpar_incidentes_encerrados()
-
-        except Exception as erro:
-            QMessageBox.critical(
-                self,
-                "Registro de Incidentes",
-                "Não foi possível limpar o histórico.\n\n"
-                f"Detalhes: {erro}"
-            )
-
-            return
-
-        QMessageBox.information(
-            self,
-            "Registro de Incidentes",
-            (
-                f"{removidos} incidente removido."
-                if removidos == 1
-                else f"{removidos} incidentes removidos."
-            )
+            "Monitor de Rota"
         )
 
     # ==================================================
@@ -1492,40 +753,6 @@ class SettingsWindow(QDialog):
             self.combo_alerta_sonoro
         )
 
-        self.cooldown_alertas = QSpinBox()
-
-        self.cooldown_alertas.setRange(
-            0,
-            1440
-        )
-
-        self.cooldown_alertas.setSuffix(
-            " min"
-        )
-
-        self.cooldown_alertas.setSpecialValueText(
-            "Desativado"
-        )
-
-        self.cooldown_alertas.setValue(
-            int(
-                self.configuracoes.get(
-                    "alerta_cooldown_minutos",
-                    5
-                )
-            )
-        )
-
-        self.cooldown_alertas.setToolTip(
-            "Tempo mínimo para que uma nova queda do mesmo serviço "
-            "possa gerar outro alerta sonoro após a normalização."
-        )
-
-        formulario.addRow(
-            "Cooldown dos alertas:",
-            self.cooldown_alertas
-        )
-
         layout.addLayout(
             formulario
         )
@@ -1600,10 +827,8 @@ class SettingsWindow(QDialog):
             "indicam uma possível falha da rede local. O alerta de "
             "serviço indisponível será usado quando um destino acumular "
             "o número configurado de falhas consecutivas e realmente "
-            "entrar em estado indisponível. Após a normalização, o "
-            "cooldown impede que o mesmo serviço gere novos sons em "
-            "intervalos muito curtos caso fique alternando entre "
-            "online e offline."
+            "entrar em estado indisponível. Cada alerta é rearmado "
+            "somente após a respectiva condição normalizar."
         )
 
         descricao.setWordWrap(
@@ -1612,10 +837,9 @@ class SettingsWindow(QDialog):
 
         observacao = QLabel(
             "Arquivos personalizados devem estar no formato WAV. "
-            "Na categoria Monitor de Serviços, selecione um serviço e use "
-            "“Configurar alerta” para definir uma configuração "
-            "sonora específica para ele. Serviços sem configuração "
-            "própria continuam usando o alerta global."
+            "Nesta etapa, o alerta de serviço indisponível usa o "
+            "mesmo som configurado para o alerta geral. Sons exclusivos "
+            "por serviço poderão ser adicionados depois."
         )
 
         observacao.setWordWrap(
@@ -1662,11 +886,9 @@ class SettingsWindow(QDialog):
 
         self.atualizar_alerta_personalizado()
 
-        self.adicionar_pagina_configuracoes(
+        self.abas.addTab(
             aba,
-            "Alertas",
-            "Configure sons, alertas gerais, alertas por serviço "
-            "e o cooldown entre notificações."
+            "Alertas"
         )
 
     def atualizar_alerta_personalizado(
@@ -1879,8 +1101,8 @@ class SettingsWindow(QDialog):
 
         descricao = QLabel(
             "Ao encontrar uma interface web acessível, "
-            "o NDT abre apenas a opção preferencial, priorizando "
-            "HTTPS quando disponível."
+            "o Network Diagnostic Tool abre apenas uma delas, "
+            "usando a opção mais segura disponível."
         )
 
         descricao.setWordWrap(
@@ -1896,9 +1118,11 @@ class SettingsWindow(QDialog):
         )
 
         prioridade = QLabel(
-            "1. Interfaces configuradas ou detectadas como HTTPS\n"
-            "2. Interfaces configuradas ou detectadas como HTTP\n"
-            "3. Em modo Automático, o NDT testa HTTPS e depois HTTP"
+            "1. HTTPS 443\n"
+            "2. HTTPS 8443\n"
+            "3. HTTP 80\n"
+            "4. HTTP 8000\n"
+            "5. HTTP 8080"
         )
 
         prioridade.setWordWrap(
@@ -1971,11 +1195,9 @@ class SettingsWindow(QDialog):
 
         self.atualizar_navegador_personalizado()
 
-        self.adicionar_pagina_configuracoes(
+        self.abas.addTab(
             aba,
-            "Navegador",
-            "Escolha o navegador usado pelo NDT e o comportamento "
-            "de abertura automática das interfaces web."
+            "Navegador"
         )
 
     def atualizar_navegador_personalizado(
@@ -2081,116 +1303,6 @@ class SettingsWindow(QDialog):
     # PORTAS
     # ==================================================
 
-    def inferir_interface_web_porta(
-        self,
-        porta
-    ):
-        interfaces = self.configuracoes.get(
-            "interfaces_web_portas",
-            {}
-        )
-
-        protocolo = str(
-            interfaces.get(
-                str(
-                    porta
-                ),
-                ""
-            )
-        ).strip().upper()
-
-        if protocolo in {
-            "HTTP",
-            "HTTPS",
-            "AUTOMATICO",
-            "NENHUMA"
-        }:
-            return protocolo
-
-        if porta in {
-            443,
-            8443
-        }:
-            return "HTTPS"
-
-        if porta in {
-            80,
-            8000,
-            8080
-        }:
-            return "HTTP"
-
-        return "NENHUMA"
-
-    def solicitar_interface_web(
-        self,
-        titulo,
-        porta,
-        valor_atual=None
-    ):
-        opcoes = [
-            "Nenhuma",
-            "HTTP",
-            "HTTPS",
-            "Automático (HTTP/HTTPS)"
-        ]
-
-        mapa = {
-            "NENHUMA": "Nenhuma",
-            "HTTP": "HTTP",
-            "HTTPS": "HTTPS",
-            "AUTOMATICO": "Automático (HTTP/HTTPS)"
-        }
-
-        if valor_atual is None:
-            protocolo_atual = (
-                self.inferir_interface_web_porta(
-                    porta
-                )
-            )
-        else:
-            protocolo_atual = str(
-                valor_atual
-            ).strip().upper()
-
-        if protocolo_atual == "AUTOMÁTICO":
-            protocolo_atual = "AUTOMATICO"
-
-        if protocolo_atual == "AUTOMÁTICO (HTTP/HTTPS)":
-            protocolo_atual = "AUTOMATICO"
-
-        if protocolo_atual == "AUTOMÁTICO":
-            protocolo_atual = "AUTOMATICO"
-
-        exibicao_atual = mapa.get(
-            protocolo_atual,
-            "Nenhuma"
-        )
-
-        indice = opcoes.index(
-            exibicao_atual
-        )
-
-        escolha, ok = QInputDialog.getItem(
-            self,
-            titulo,
-            "Interface Web:",
-            opcoes,
-            indice,
-            False
-        )
-
-        if not ok:
-            return None
-
-        if escolha == "Nenhuma":
-            return "NENHUMA"
-
-        if escolha == "Automático (HTTP/HTTPS)":
-            return "AUTOMATICO"
-
-        return escolha.upper()
-
     def carregar_portas(
         self
     ):
@@ -2222,29 +1334,6 @@ class SettingsWindow(QDialog):
                 1,
                 QTableWidgetItem(
                     servico
-                )
-            )
-
-            protocolo = self.inferir_interface_web_porta(
-                int(
-                    porta
-                )
-            )
-
-            if protocolo == "NENHUMA":
-                texto_protocolo = "Nenhuma"
-
-            elif protocolo == "AUTOMATICO":
-                texto_protocolo = "Automático"
-
-            else:
-                texto_protocolo = protocolo
-
-            self.tabela_portas.setItem(
-                linha,
-                2,
-                QTableWidgetItem(
-                    texto_protocolo
                 )
             )
 
@@ -2303,14 +1392,6 @@ class SettingsWindow(QDialog):
         if not ok:
             return
 
-        protocolo_web = self.solicitar_interface_web(
-            "Interface Web",
-            porta
-        )
-
-        if protocolo_web is None:
-            return
-
         linha = self.tabela_portas.rowCount()
 
         self.tabela_portas.insertRow(
@@ -2334,22 +1415,6 @@ class SettingsWindow(QDialog):
             )
         )
 
-        self.tabela_portas.setItem(
-            linha,
-            2,
-            QTableWidgetItem(
-                (
-                    "Nenhuma"
-                    if protocolo_web == "NENHUMA"
-                    else (
-                        "Automático"
-                        if protocolo_web == "AUTOMATICO"
-                        else protocolo_web
-                    )
-                )
-            )
-        )
-
     def editar_porta(
         self
     ):
@@ -2368,15 +1433,9 @@ class SettingsWindow(QDialog):
             1
         )
 
-        item_interface = self.tabela_portas.item(
-            linha,
-            2
-        )
-
         if (
             item_porta is None
             or item_servico is None
-            or item_interface is None
         ):
             return
 
@@ -2420,15 +1479,6 @@ class SettingsWindow(QDialog):
         if not ok:
             return
 
-        protocolo_web = self.solicitar_interface_web(
-            "Editar Interface Web",
-            porta,
-            item_interface.text()
-        )
-
-        if protocolo_web is None:
-            return
-
         self.tabela_portas.setItem(
             linha,
             0,
@@ -2443,22 +1493,6 @@ class SettingsWindow(QDialog):
             QTableWidgetItem(
                 servico.strip()
                 or "TCP"
-            )
-        )
-
-        self.tabela_portas.setItem(
-            linha,
-            2,
-            QTableWidgetItem(
-                (
-                    "Nenhuma"
-                    if protocolo_web == "NENHUMA"
-                    else (
-                        "Automático"
-                        if protocolo_web == "AUTOMATICO"
-                        else protocolo_web
-                    )
-                )
             )
         )
 
@@ -2493,130 +1527,25 @@ class SettingsWindow(QDialog):
                 servico
             )
 
-    def normalizar_config_alerta_servico(
-        self,
-        servico
-    ):
-        servico = deepcopy(
-            servico
-        )
-
-        servico.setdefault(
-            "alerta_individual_ativado",
-            False
-        )
-
-        modo = servico.get(
-            "alerta_individual_modo",
-            "global"
-        )
-
-        if modo not in {
-            "global",
-            "padrao",
-            "personalizado"
-        }:
-            modo = "global"
-
-        servico[
-            "alerta_individual_modo"
-        ] = modo
-
-        arquivo = servico.get(
-            "alerta_individual_arquivo",
-            ""
-        )
-
-        if not isinstance(
-            arquivo,
-            str
-        ):
-            arquivo = ""
-
-        servico[
-            "alerta_individual_arquivo"
-        ] = arquivo
-
-        return servico
-
-    def obter_texto_alerta_servico(
-        self,
-        servico
-    ):
-        if not servico.get(
-            "alerta_individual_ativado",
-            False
-        ):
-            return (
-                "Global",
-                "Som global"
-            )
-
-        modo = servico.get(
-            "alerta_individual_modo",
-            "global"
-        )
-
-        if modo == "personalizado":
-            arquivo = servico.get(
-                "alerta_individual_arquivo",
-                ""
-            )
-
-            nome_arquivo = (
-                Path(
-                    arquivo
-                ).name
-                if arquivo
-                else "WAV"
-            )
-
-            return (
-                "Personalizado",
-                nome_arquivo
-            )
-
-        if modo == "padrao":
-            return (
-                "Personalizado",
-                "Padrão NDT"
-            )
-
-        return (
-            "Personalizado",
-            "Som global"
-        )
-
     def inserir_servico_tabela(
         self,
         servico
     ):
-        servico = self.normalizar_config_alerta_servico(
-            servico
-        )
-
         linha = self.tabela_servicos.rowCount()
 
         self.tabela_servicos.insertRow(
             linha
         )
 
-        item_nome = QTableWidgetItem(
-            servico.get(
-                "nome",
-                "Serviço"
-            )
-        )
-
-        item_nome.setData(
-            Qt.ItemDataRole.UserRole,
-            servico
-        )
-
         self.tabela_servicos.setItem(
             linha,
             0,
-            item_nome
+            QTableWidgetItem(
+                servico.get(
+                    "nome",
+                    "Serviço"
+                )
+            )
         )
 
         self.tabela_servicos.setItem(
@@ -2638,154 +1567,6 @@ class SettingsWindow(QDialog):
                     "endereco",
                     ""
                 )
-            )
-        )
-
-        texto_alerta, texto_som = (
-            self.obter_texto_alerta_servico(
-                servico
-            )
-        )
-
-        self.tabela_servicos.setItem(
-            linha,
-            3,
-            QTableWidgetItem(
-                texto_alerta
-            )
-        )
-
-        self.tabela_servicos.setItem(
-            linha,
-            4,
-            QTableWidgetItem(
-                texto_som
-            )
-        )
-
-    def obter_servico_linha(
-        self,
-        linha
-    ):
-        item_nome = self.tabela_servicos.item(
-            linha,
-            0
-        )
-
-        item_tipo = self.tabela_servicos.item(
-            linha,
-            1
-        )
-
-        item_endereco = self.tabela_servicos.item(
-            linha,
-            2
-        )
-
-        if (
-            item_nome is None
-            or item_tipo is None
-            or item_endereco is None
-        ):
-            return None
-
-        metadados = item_nome.data(
-            Qt.ItemDataRole.UserRole
-        )
-
-        if not isinstance(
-            metadados,
-            dict
-        ):
-            metadados = {}
-
-        servico = deepcopy(
-            metadados
-        )
-
-        servico["nome"] = item_nome.text()
-        servico["tipo"] = item_tipo.text()
-        servico["endereco"] = item_endereco.text()
-
-        return self.normalizar_config_alerta_servico(
-            servico
-        )
-
-    def atualizar_servico_linha(
-        self,
-        linha,
-        servico
-    ):
-        servico = self.normalizar_config_alerta_servico(
-            servico
-        )
-
-        item_nome = self.tabela_servicos.item(
-            linha,
-            0
-        )
-
-        if item_nome is None:
-            item_nome = QTableWidgetItem()
-            self.tabela_servicos.setItem(
-                linha,
-                0,
-                item_nome
-            )
-
-        item_nome.setText(
-            servico.get(
-                "nome",
-                "Serviço"
-            )
-        )
-
-        item_nome.setData(
-            Qt.ItemDataRole.UserRole,
-            servico
-        )
-
-        self.tabela_servicos.setItem(
-            linha,
-            1,
-            QTableWidgetItem(
-                servico.get(
-                    "tipo",
-                    "PING"
-                ).upper()
-            )
-        )
-
-        self.tabela_servicos.setItem(
-            linha,
-            2,
-            QTableWidgetItem(
-                servico.get(
-                    "endereco",
-                    ""
-                )
-            )
-        )
-
-        texto_alerta, texto_som = (
-            self.obter_texto_alerta_servico(
-                servico
-            )
-        )
-
-        self.tabela_servicos.setItem(
-            linha,
-            3,
-            QTableWidgetItem(
-                texto_alerta
-            )
-        )
-
-        self.tabela_servicos.setItem(
-            linha,
-            4,
-            QTableWidgetItem(
-                texto_som
             )
         )
 
@@ -2797,14 +1578,33 @@ class SettingsWindow(QDialog):
         for linha in range(
             self.tabela_servicos.rowCount()
         ):
-            servico = self.obter_servico_linha(
-                linha
+            item_nome = self.tabela_servicos.item(
+                linha,
+                0
             )
 
-            if servico is not None:
-                servicos.append(
-                    servico
-                )
+            item_tipo = self.tabela_servicos.item(
+                linha,
+                1
+            )
+
+            item_endereco = self.tabela_servicos.item(
+                linha,
+                2
+            )
+
+            if (
+                item_nome is None
+                or item_tipo is None
+                or item_endereco is None
+            ):
+                continue
+
+            servicos.append({
+                "nome": item_nome.text(),
+                "tipo": item_tipo.text(),
+                "endereco": item_endereco.text()
+            })
 
         return servicos
 
@@ -2943,10 +1743,7 @@ class SettingsWindow(QDialog):
         servico = {
             "nome": nome,
             "endereco": endereco,
-            "tipo": tipo,
-            "alerta_individual_ativado": False,
-            "alerta_individual_modo": "global",
-            "alerta_individual_arquivo": ""
+            "tipo": tipo
         }
 
         if self.servico_existe(
@@ -2972,21 +1769,33 @@ class SettingsWindow(QDialog):
         if linha < 0:
             return
 
-        servico_atual = self.obter_servico_linha(
-            linha
+        item_nome = self.tabela_servicos.item(
+            linha,
+            0
         )
 
-        if servico_atual is None:
+        item_tipo = self.tabela_servicos.item(
+            linha,
+            1
+        )
+
+        item_endereco = self.tabela_servicos.item(
+            linha,
+            2
+        )
+
+        if (
+            item_nome is None
+            or item_tipo is None
+            or item_endereco is None
+        ):
             return
 
         nome, ok = QInputDialog.getText(
             self,
             "Editar serviço",
             "Nome:",
-            text=servico_atual.get(
-                "nome",
-                ""
-            )
+            text=item_nome.text()
         )
 
         if not ok:
@@ -2996,33 +1805,15 @@ class SettingsWindow(QDialog):
             self,
             "Editar serviço",
             "IP, domínio ou URL:",
-            text=servico_atual.get(
-                "endereco",
-                ""
-            )
+            text=item_endereco.text()
         )
 
         if not ok:
             return
 
-        endereco = endereco.strip()
-
-        if normalizar_alvo(
-            endereco
-        ) is None:
-            QMessageBox.warning(
-                self,
-                "Endereço inválido",
-                "Informe um IP, domínio ou URL válido."
-            )
-            return
-
         escolha_atual = (
             1
-            if servico_atual.get(
-                "tipo",
-                "PING"
-            ) == "HTTP"
+            if item_tipo.text() == "HTTP"
             else 0
         )
 
@@ -3047,318 +1838,30 @@ class SettingsWindow(QDialog):
             else "PING"
         )
 
-        servico_atual["nome"] = (
-            nome.strip()
-            or "Serviço"
-        )
-        servico_atual["tipo"] = tipo
-        servico_atual["endereco"] = endereco
-
-        self.atualizar_servico_linha(
+        self.tabela_servicos.setItem(
             linha,
-            servico_atual
-        )
-
-    def configurar_alerta_servico(
-        self
-    ):
-        linha = self.tabela_servicos.currentRow()
-
-        if linha < 0:
-            QMessageBox.information(
-                self,
-                "Configurar alerta",
-                "Selecione um serviço na tabela."
-            )
-            return
-
-        servico = self.obter_servico_linha(
-            linha
-        )
-
-        if servico is None:
-            return
-
-        janela = QDialog(
-            self
-        )
-        janela.setWindowTitle(
-            "Alerta do serviço"
-        )
-        janela.resize(
-            560,
-            330
-        )
-
-        layout = QVBoxLayout(
-            janela
-        )
-
-        titulo = QLabel(
-            servico.get(
-                "nome",
-                "Serviço"
-            )
-        )
-        titulo.setObjectName(
-            "tituloConfiguracaoInfo"
-        )
-        layout.addWidget(
-            titulo
-        )
-
-        descricao = QLabel(
-            "A configuração específica substitui o som global "
-            "somente para este serviço quando ele ficar indisponível."
-        )
-        descricao.setWordWrap(
-            True
-        )
-        layout.addWidget(
-            descricao
-        )
-
-        checkbox_especifico = QCheckBox(
-            "Usar configuração de alerta específica para este serviço"
-        )
-        checkbox_especifico.setChecked(
-            servico.get(
-                "alerta_individual_ativado",
-                False
-            )
-        )
-        layout.addWidget(
-            checkbox_especifico
-        )
-
-        formulario = QFormLayout()
-        combo_modo = QComboBox()
-        combo_modo.addItem(
-            "Usar som global",
-            "global"
-        )
-        combo_modo.addItem(
-            "Som padrão do NDT",
-            "padrao"
-        )
-        combo_modo.addItem(
-            "Arquivo WAV personalizado",
-            "personalizado"
-        )
-
-        indice = combo_modo.findData(
-            servico.get(
-                "alerta_individual_modo",
-                "global"
-            )
-        )
-        if indice >= 0:
-            combo_modo.setCurrentIndex(
-                indice
-            )
-
-        formulario.addRow(
-            "Som:",
-            combo_modo
-        )
-        layout.addLayout(
-            formulario
-        )
-
-        container_arquivo = QWidget()
-        layout_arquivo = QHBoxLayout(
-            container_arquivo
-        )
-        layout_arquivo.setContentsMargins(
             0,
-            0,
-            0,
-            0
-        )
-
-        campo_arquivo = QLineEdit()
-        campo_arquivo.setPlaceholderText(
-            "Caminho do arquivo WAV"
-        )
-        campo_arquivo.setText(
-            servico.get(
-                "alerta_individual_arquivo",
-                ""
+            QTableWidgetItem(
+                nome.strip()
+                or "Serviço"
             )
         )
 
-        botao_procurar = QPushButton(
-            "Procurar..."
-        )
-        layout_arquivo.addWidget(
-            campo_arquivo,
-            1
-        )
-        layout_arquivo.addWidget(
-            botao_procurar
-        )
-        layout.addWidget(
-            container_arquivo
-        )
-
-        botoes_audio = QHBoxLayout()
-        botao_testar = QPushButton(
-            "Testar som"
-        )
-        botoes_audio.addWidget(
-            botao_testar
-        )
-        botoes_audio.addStretch()
-        layout.addLayout(
-            botoes_audio
-        )
-        layout.addStretch()
-
-        botoes_final = QHBoxLayout()
-        botao_cancelar = QPushButton(
-            "Cancelar"
-        )
-        botao_salvar = QPushButton(
-            "Salvar"
-        )
-        botoes_final.addStretch()
-        botoes_final.addWidget(
-            botao_cancelar
-        )
-        botoes_final.addWidget(
-            botao_salvar
-        )
-        layout.addLayout(
-            botoes_final
-        )
-
-        def atualizar_campos():
-            habilitado = checkbox_especifico.isChecked()
-            combo_modo.setEnabled(
-                habilitado
+        self.tabela_servicos.setItem(
+            linha,
+            1,
+            QTableWidgetItem(
+                tipo
             )
-            modo = combo_modo.currentData()
-            container_arquivo.setVisible(
-                habilitado
-                and modo == "personalizado"
+        )
+
+        self.tabela_servicos.setItem(
+            linha,
+            2,
+            QTableWidgetItem(
+                endereco.strip()
             )
-            botao_testar.setEnabled(
-                habilitado
-            )
-
-        def procurar_arquivo():
-            caminho, _ = QFileDialog.getOpenFileName(
-                janela,
-                "Selecionar som do serviço",
-                "",
-                "Arquivos WAV (*.wav);;Todos os arquivos (*)"
-            )
-            if caminho:
-                campo_arquivo.setText(
-                    caminho
-                )
-
-        def testar_som():
-            modo = combo_modo.currentData()
-
-            if modo == "global":
-                modo_teste = (
-                    self.combo_alerta_sonoro.currentData()
-                    or "padrao"
-                )
-                arquivo_teste = (
-                    self.campo_alerta_sonoro.text().strip()
-                )
-            else:
-                modo_teste = modo
-                arquivo_teste = campo_arquivo.text().strip()
-
-            if (
-                modo_teste == "personalizado"
-                and not arquivo_teste
-            ):
-                QMessageBox.warning(
-                    janela,
-                    "Som personalizado",
-                    "Selecione um arquivo WAV para testar."
-                )
-                return
-
-            sucesso = testar_alerta(
-                modo=modo_teste,
-                arquivo=arquivo_teste
-            )
-
-            if not sucesso:
-                QMessageBox.warning(
-                    janela,
-                    "Falha no teste",
-                    "Não foi possível reproduzir o som."
-                )
-
-        def salvar_alerta():
-            habilitado = checkbox_especifico.isChecked()
-            modo = combo_modo.currentData() or "global"
-            arquivo = campo_arquivo.text().strip()
-
-            if (
-                habilitado
-                and modo == "personalizado"
-            ):
-                if not arquivo:
-                    QMessageBox.warning(
-                        janela,
-                        "Alerta do serviço",
-                        "Selecione um arquivo WAV."
-                    )
-                    return
-
-                caminho = Path(
-                    arquivo
-                ).expanduser()
-
-                if (
-                    not caminho.is_file()
-                    or caminho.suffix.lower() != ".wav"
-                ):
-                    QMessageBox.warning(
-                        janela,
-                        "Alerta do serviço",
-                        "O arquivo selecionado não é um WAV válido."
-                    )
-                    return
-
-            servico["alerta_individual_ativado"] = habilitado
-            servico["alerta_individual_modo"] = modo
-            servico["alerta_individual_arquivo"] = arquivo
-
-            self.atualizar_servico_linha(
-                linha,
-                servico
-            )
-            janela.accept()
-
-        checkbox_especifico.toggled.connect(
-            atualizar_campos
         )
-        combo_modo.currentIndexChanged.connect(
-            atualizar_campos
-        )
-        botao_procurar.clicked.connect(
-            procurar_arquivo
-        )
-        botao_testar.clicked.connect(
-            testar_som
-        )
-        botao_cancelar.clicked.connect(
-            janela.reject
-        )
-        botao_salvar.clicked.connect(
-            salvar_alerta
-        )
-
-        atualizar_campos()
-        janela.exec()
 
     def remover_servico(
         self
@@ -3378,7 +1881,6 @@ class SettingsWindow(QDialog):
         self
     ):
         portas = {}
-        interfaces_web_portas = {}
 
         for linha in range(
             self.tabela_portas.rowCount()
@@ -3393,47 +1895,15 @@ class SettingsWindow(QDialog):
                 1
             )
 
-            item_interface = self.tabela_portas.item(
-                linha,
-                2
-            )
-
             if (
                 item_porta is None
                 or item_servico is None
-                or item_interface is None
             ):
                 continue
 
-            porta_texto = item_porta.text()
-
             portas[
-                porta_texto
+                item_porta.text()
             ] = item_servico.text()
-
-            protocolo = (
-                item_interface.text()
-                .strip()
-                .upper()
-            )
-
-            if protocolo in {
-                "AUTOMÁTICO",
-                "AUTOMÁTICO (HTTP/HTTPS)"
-            }:
-                protocolo = "AUTOMATICO"
-
-            if protocolo not in {
-                "HTTP",
-                "HTTPS",
-                "AUTOMATICO",
-                "NENHUMA"
-            }:
-                protocolo = "NENHUMA"
-
-            interfaces_web_portas[
-                porta_texto
-            ] = protocolo
 
         if not portas:
             QMessageBox.warning(
@@ -3554,9 +2024,6 @@ class SettingsWindow(QDialog):
             "abrir_interface_web_automaticamente":
                 self.checkbox_abrir_interface.isChecked(),
 
-            "exibir_tela_inicializacao":
-                self.checkbox_tela_inicializacao.isChecked(),
-
             "alerta_sonoro_geral_ativado":
                 self.checkbox_alerta_sonoro_geral.isChecked(),
 
@@ -3569,15 +2036,6 @@ class SettingsWindow(QDialog):
             "alerta_sonoro_arquivo":
                 alerta_arquivo,
 
-            "alerta_cooldown_minutos":
-                self.cooldown_alertas.value(),
-
-            "registro_incidentes_ativado":
-                self.checkbox_registro_incidentes.isChecked(),
-
-            "registro_incidentes_retencao_dias":
-                self.retencao_incidentes.value(),
-
             "servicos_padrao_inicializados":
                 True,
 
@@ -3585,10 +2043,7 @@ class SettingsWindow(QDialog):
                 self.obter_servicos_tabela(),
 
             "portas":
-                portas,
-
-            "interfaces_web_portas":
-                interfaces_web_portas
+                portas
         }
 
         self.accept()
