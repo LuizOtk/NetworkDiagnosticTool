@@ -1,3 +1,4 @@
+import queue
 import threading
 import time
 import winsound
@@ -7,17 +8,12 @@ from pathlib import Path
 from services.logger import logger
 
 
-_audio_lock = threading.Lock()
+_fila_audio = queue.Queue()
+_worker_audio = None
+_worker_lock = threading.Lock()
 
 
 def _tocar_padrao_ndt():
-    """
-    Alerta padrão do NDT.
-
-    Usa winsound.Beep em vez de depender do esquema de sons do
-    Windows. Isso deixa o alerta mais confiável mesmo quando a
-    aplicação está minimizada/oculta na bandeja.
-    """
     winsound.Beep(
         1100,
         220
@@ -37,41 +33,11 @@ def _reproduzir_alerta(
     modo,
     arquivo
 ):
-    if not _audio_lock.acquire(
-        blocking=False
-    ):
-        logger.info(
-            "Alerta sonoro ignorado porque outro áudio "
-            "já está em reprodução."
-        )
-        return
-
     try:
         if modo == "personalizado":
             caminho = Path(
                 arquivo
             ).expanduser()
-
-            if not caminho.exists():
-                logger.warning(
-                    "Arquivo de alerta sonoro não encontrado: %s",
-                    caminho
-                )
-                return
-
-            if not caminho.is_file():
-                logger.warning(
-                    "Caminho de alerta sonoro não é um arquivo: %s",
-                    caminho
-                )
-                return
-
-            if caminho.suffix.lower() != ".wav":
-                logger.warning(
-                    "Formato de áudio não suportado: %s",
-                    caminho.suffix
-                )
-                return
 
             winsound.PlaySound(
                 str(caminho),
@@ -84,13 +50,12 @@ def _reproduzir_alerta(
                 caminho
             )
 
-            return
+        else:
+            _tocar_padrao_ndt()
 
-        _tocar_padrao_ndt()
-
-        logger.info(
-            "Alerta sonoro padrão do NDT reproduzido."
-        )
+            logger.info(
+                "Alerta sonoro padrão do NDT reproduzido."
+            )
 
     except (
         RuntimeError,
@@ -101,32 +66,54 @@ def _reproduzir_alerta(
             erro
         )
 
-    finally:
-        _audio_lock.release()
+
+def _processar_fila_audio():
+    while True:
+        modo, arquivo = _fila_audio.get()
+
+        try:
+            _reproduzir_alerta(
+                modo,
+                arquivo
+            )
+
+            # Pequena separação entre alertas consecutivos.
+            time.sleep(
+                0.15
+            )
+
+        finally:
+            _fila_audio.task_done()
 
 
-def tocar_alerta(
-    modo="padrao",
-    arquivo="",
-    assincrono=True
+def _garantir_worker_audio():
+    global _worker_audio
+
+    with _worker_lock:
+        if (
+            _worker_audio is not None
+            and _worker_audio.is_alive()
+        ):
+            return
+
+        _worker_audio = threading.Thread(
+            target=_processar_fila_audio,
+            name="NDT-AudioWorker",
+            daemon=True
+        )
+
+        _worker_audio.start()
+
+
+def validar_alerta(
+    modo,
+    arquivo
 ):
-    """
-    Agenda a reprodução do alerta.
-
-    A reprodução ocorre em uma thread Python independente da
-    interface Qt. Isso evita travar a janela principal e mantém
-    o áudio funcionando quando o NDT está oculto na bandeja.
-
-    Retorna True quando a reprodução foi iniciada/agendada.
-    """
-    modo = (
-        modo
-        if modo in {
-            "padrao",
-            "personalizado"
-        }
-        else "padrao"
-    )
+    if modo not in {
+        "padrao",
+        "personalizado"
+    }:
+        modo = "padrao"
 
     if modo == "personalizado":
         caminho = Path(
@@ -142,43 +129,59 @@ def tocar_alerta(
                 "Alerta personalizado inválido: %s",
                 arquivo
             )
-            return False
 
-    if assincrono:
-        thread_audio = threading.Thread(
-            target=_reproduzir_alerta,
-            args=(
-                modo,
-                arquivo
-            ),
-            name="NDT-AudioAlert",
-            daemon=True
-        )
+            return (
+                False,
+                modo
+            )
 
-        thread_audio.start()
+    return (
+        True,
+        modo
+    )
 
-        logger.info(
-            "Alerta sonoro agendado | Modo=%s",
-            modo
+
+def tocar_alerta(
+    modo="padrao",
+    arquivo="",
+    assincrono=True
+):
+    valido, modo = validar_alerta(
+        modo,
+        arquivo
+    )
+
+    if not valido:
+        return False
+
+    if not assincrono:
+        _reproduzir_alerta(
+            modo,
+            arquivo
         )
 
         return True
 
-    _reproduzir_alerta(
+    _garantir_worker_audio()
+
+    _fila_audio.put(
+        (
+            modo,
+            arquivo
+        )
+    )
+
+    logger.info(
+        "Alerta sonoro adicionado à fila | "
+        "Modo=%s | Pendentes=%s",
         modo,
-        arquivo
+        _fila_audio.qsize()
     )
 
     return True
 
 
 def parar_alerta():
-    """
-    Interrompe um WAV reproduzido por PlaySound.
-
-    O alerta padrão do NDT usa uma sequência curta de Beeps e
-    termina sozinho em menos de um segundo.
-    """
     try:
         winsound.PlaySound(
             None,
@@ -196,9 +199,6 @@ def testar_alerta(
     modo="padrao",
     arquivo=""
 ):
-    """
-    Testa o som sem bloquear a interface.
-    """
     return tocar_alerta(
         modo=modo,
         arquivo=arquivo,
